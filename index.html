@@ -206,7 +206,6 @@ function calculate() {
     const pityCount = parseInt(document.getElementById('pityCount').value);
 	let resultHtml = '';
 	let pro = [];
-	if ( pickupCountfull > attemptCount) pickupCountfull = attemptCount;
 	
 	if ( pickupCountfull > 29) {
 	resultHtml += `<span style="font-weight: bold; color: red;">오류 : 픽업 수가 너무 많습니다</span>`;
@@ -234,6 +233,7 @@ function calculate() {
 				}
 			}
 			if (pityCount > m) probability = 0;
+			if (attemptCount < m) probability = 0;
 			pro[m] = probability;
 			if (probability < 0.01 && probability > 0) {
 			let proba2 = 1 / probability * 100
