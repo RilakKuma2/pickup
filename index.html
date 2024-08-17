@@ -206,6 +206,7 @@ function calculate() {
     const pityCount = parseInt(document.getElementById('pityCount').value);
 	let resultHtml = '';
 	let pro = [];
+	if ( pickupCountfull > attemptCount) pickupCountfull = attemptCount;
 	
 	if ( pickupCountfull > 29) {
 	resultHtml += `<span style="font-weight: bold; color: red;">오류 : 픽업 수가 너무 많습니다</span>`;
