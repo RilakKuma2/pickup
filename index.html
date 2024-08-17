@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="픽업 확률 계산기">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-startup-image" href="startup.png">
+    <link rel="icon" type="image/png" href="icon.png">
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>픽업 확률 계산기</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background: #fff;
+            padding: 2px 1px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            display: inline;
+            margin: 15px 0 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 25%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            text-align: center;
+        }
+        h2 {
+            margin-top: 30px;
+            color: #333;
+        }
+        p {
+            font-size: 18px;
+            color: #555;
+            word-break: break-word;
+        }
+        #error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        .tabs {
+            display: flex;
+            justify-content: space-evenly;
+            margin-bottom: 20px;
+        }
+        .tab {
+            cursor: pointer;
+            padding: 10px 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+			font-size: 15px;
+			font-weight: bold;
+        }
+        .tab.active {
+            background-color: #007bff;
+            color: #fff;
+        }
+		.button-container {
+			display: flex;
+			justify-content: center;
+			margin-top: 20px;
+			flex-wrap: wrap;
+		}
+		.label {
+			white-space: nowrap;
+		}
+        .action-button {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
+			font-size: 14px;
+			font-weight: bold;
+        }
+        .action-button:hover {
+            background-color: #0056b3;
+        }	
+        .chart-container {
+            position: relative;
+            width: 50%;
+            margin: auto;
+        }
+        #pieChart {
+            width: 100%;
+            height: 100%;
+        }
+        .legend {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+        }
+        .legend li {
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+        }
+        .legend span {
+            width: 15px;
+            height: 15px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>픽업 확률 계산기</h1>
+	
+	
+        <div id="form-group">
+            <label for="pickupProbability">픽업 확률:</label>
+            <input type="number" id="pickupProbability" min="0" max="100" value="0.4">
+			<span id="prob-unit">%</span><br>
+
+            <label for="pickupCount">픽업 개수:</label>
+            <input type="number" id="pickupCount" min="1" value="3"><br>
+
+            <label for="attemptCount">시도 횟수:</label>
+            <input type="number" id="attemptCount" min="1" value="200"><br>
+
+            <label for="pityCount">천장 횟수:</label>
+            <input type="number" id="pityCount" min="0" value="0">
+        </div>
+        <p id="result"></p>
+    <div style="width: 50%; margin: auto;">
+        <canvas id="myPieChart"></canvas>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script>
+// 조합을 계산하는 함수
+function combination(n, k) {
+    if (k > n) return 0;
+    if (k === 0 || k === n) return 1;
+    let result = 1;
+    for (let i = 1; i <= k; i++) {
+        result *= (n - i + 1) / i;
+    }
+    return result;
+}
+
+// (1 - 픽업 확률 * (픽업 수 - 목표 픽업))^시도 횟수를 계산하는 함수
+function calculatePickupProbability(pickupProbability, pickupCount, attemptCount, targetPickup) {
+    const probabilityFactor = 1 - pickupProbability * (pickupCount - targetPickup);
+    const result = Math.pow(probabilityFactor, attemptCount);
+    return result;
+}
+
+// 숫자 한글 표기
+function numberToKorean(number) {
+    var inputNumber = number < 0 ? false : number;
+    var unitWords = ['', '만', '억', '조', '경', '해', '자', '양'];
+    var splitUnit = 10000;
+    var splitCount = unitWords.length;
+    var resultString = '';
+
+    for (var i = splitCount - 1; i >= 0; i--) {
+        var unitResult = (inputNumber % Math.pow(splitUnit, i + 1)) / Math.pow(splitUnit, i);
+        unitResult = Math.floor(unitResult);
+        if (unitResult > 0) {
+            resultString = String(unitResult) + unitWords[i];
+            break;
+        }
+    }
+
+    return resultString;
+}
+
+
+// 결과를 계산하고 출력하는 함수
+function calculate() {
+    const pickupProbability = parseFloat(document.getElementById('pickupProbability').value) / 100;
+    const pickupCountfull = parseInt(document.getElementById('pickupCount').value);
+    const attemptCount = parseInt(document.getElementById('attemptCount').value);
+    const pityCount = parseInt(document.getElementById('pityCount').value);
+	let resultHtml = '';
+	let pro = [];
+	
+	if ( pickupCountfull > 29) {
+	resultHtml += `<span style="font-weight: bold; color: red;">오류 : 픽업 수가 너무 많습니다</span>`;
+	} else {
+
+		// 초기 com 값을 설정
+		let com = [];
+		com[0] = calculatePickupProbability(pickupProbability, pickupCountfull, attemptCount, 0);
+
+		// 각 com 값을 순차적으로 계산
+		for (let n = 1; n <= pickupCountfull; n++) {
+			let sum = 0;
+			for (let k = 0; k < n; k++) {
+				sum += com[k] * combination(n, k);
+			}
+			com[n] = calculatePickupProbability(pickupProbability, pickupCountfull, attemptCount, n) - sum;
+		}
+
+		for (let m = 0; m <= pickupCountfull; m++) {
+			let probability = com[m - pityCount] * combination(pickupCountfull, m - pityCount) * 100;
+			if (m == pickupCountfull) {
+				probability = 0;
+				for (let n = 0; n <= pityCount; n++) {
+					probability += com[m - n] * combination(pickupCountfull, m - n) * 100;
+				}
+			}
+			if (pityCount > m) probability = 0;
+			pro[m] = probability;
+			if (probability < 0.01 && probability > 0) {
+			let proba2 = 1 / probability * 100
+			resultHtml += `<span style="font-weight: bold;">${m}</span>픽업 확률: <span style="font-weight: bold;">${numberToKorean(proba2)} 분의 1</span><br><br>`;
+			} else if (probability == 0){
+			resultHtml += `<span style="font-weight: bold;">${m}</span>픽업 확률: 없음<br><br>`;
+			} else {
+			resultHtml += `<span style="font-weight: bold;">${m}</span>픽업 확률: <span style="font-weight: bold;">${probability.toFixed(2)}%</span><br><br>`;
+			}
+		}
+		let maxpity = attemptCount / 200;
+		if ( pityCount > maxpity) {
+		resultHtml += `<span style="font-weight: bold; color: red;">오류 : 천장 수가 너무 많습니다</span>`;
+		
+		}
+	}
+	
+    document.getElementById('result').innerHTML = resultHtml;
+	createOrUpdatePieChart(pro);
+}
+
+let myChart; // 그래프를 저장할 전역 변수
+
+function createOrUpdatePieChart(pro) {
+    const ctx = document.getElementById('myPieChart').getContext('2d');
+
+    if (myChart) {
+        myChart.destroy();
+    }
+
+    // 전체 합계 계산
+    const total = pro.reduce((sum, value) => sum + value, 0);
+
+    // 각 값을 퍼센트로 변환
+    const percentages = pro.map(value => ((value / total) * 100).toFixed(2));
+
+    // 새로운 그래프를 생성
+    myChart = new Chart(ctx, {
+        type: 'doughnut', // 'doughnut'으로 변경하여 도넛 차트를 생성할 수도 있습니다.
+        data: {
+            labels: percentages.map((value, index) => `${index}픽업`),
+            datasets: [{
+                data: pro,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: false,
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            const label = tooltipItem.label || '';
+                            const value = percentages[tooltipItem.dataIndex];
+                            return `${label}: ${value}%`;
+                        }
+                    }
+                },
+                datalabels: {
+                    color: '#000',
+                    anchor: 'end',
+                    align: 'start',
+					font: {
+						weight: 'bold', // 글씨를 굵게 설정
+					},
+					display: function(context) {
+						// 데이터값이 5% 이상일 경우에만 라벨 표시
+						return context.dataset.data[context.dataIndex] / context.chart._metasets[0].total * 100 >= 1;
+					},
+                    formatter: function(value, context) {
+                        return `${context.chart.data.labels[context.dataIndex]}`;
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+
+
+// 입력 변경 시마다 계산 수행
+document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', calculate);
+});
+
+calculate(); // 초기 계산 수행
+</script>
+
+</body>
+</html>
