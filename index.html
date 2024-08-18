@@ -157,6 +157,7 @@
         <p id="result"></p>
     <div style="width: 50%; margin: auto;">
         <canvas id="myPieChart"></canvas>
+	차트 내 누적확률 표기
     </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -273,11 +274,19 @@ function createOrUpdatePieChart(pro) {
     // 각 값을 퍼센트로 변환
     const percentages = pro.map(value => ((value / total) * 100).toFixed(2));
 
+	// 누적 분포를 역순으로 계산
+	let cumulative = total;
+	const cumulativeData = pro.map(value => {
+		const current = cumulative;
+		cumulative -= value;
+		return current;
+	});
+
     // 새로운 그래프를 생성
     myChart = new Chart(ctx, {
         type: 'doughnut', // 'doughnut'으로 변경하여 도넛 차트를 생성할 수도 있습니다.
         data: {
-            labels: percentages.map((value, index) => `${index}픽업`),
+            labels: percentages.map((value, index) => `${index}픽업\n${((cumulativeData[index] / total) * 100).toFixed(2)}%`),
             datasets: [{
                 data: pro,
                 backgroundColor: [
@@ -323,7 +332,6 @@ function createOrUpdatePieChart(pro) {
                     }
                 },
                 datalabels: {
-                    color: '#000',
                     anchor: 'end',
                     align: 'start',
 					font: {
