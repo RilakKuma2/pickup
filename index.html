@@ -327,7 +327,7 @@ function createOrUpdatePieChart(pro) {
                         label: function(tooltipItem) {
                             const label = tooltipItem.label || '';
                             const value = percentages[tooltipItem.dataIndex];
-                            return `${label}: ${value}%`;
+                            return `${value}%`;
                         }
                     }
                 },
