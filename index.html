@@ -286,7 +286,7 @@ function createOrUpdatePieChart(pro) {
     myChart = new Chart(ctx, {
         type: 'doughnut', // 'doughnut'으로 변경하여 도넛 차트를 생성할 수도 있습니다.
         data: {
-            labels: percentages.map((value, index) => `${index}픽업\n${((cumulativeData[index] / total) * 100).toFixed(2)}%`),
+            labels: percentages.map((value, index) => `${index}픽업\n${((cumulativeData[index] / total) * 100).toFixed(1)}%`),
             datasets: [{
                 data: pro,
                 backgroundColor: [
